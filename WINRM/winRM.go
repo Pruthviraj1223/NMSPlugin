@@ -2,6 +2,7 @@ package WINRM
 
 import (
 	"github.com/masterzen/winrm"
+	"strings"
 )
 
 func Discovery(data map[string]interface{}) map[string]interface{} {
@@ -20,6 +21,10 @@ func Discovery(data map[string]interface{}) map[string]interface{} {
 
 	_, err = client.CreateShell()
 
+	a := "aa"
+
+	hostname, _, _, err := client.RunPSWithString("hostname", a)
+
 	var errorList []string
 
 	if err != nil {
@@ -31,6 +36,8 @@ func Discovery(data map[string]interface{}) map[string]interface{} {
 	if len(errorList) == 0 {
 
 		result["status"] = "success"
+
+		result["hostname"] = strings.Trim(hostname, "\r\n")
 
 	} else {
 

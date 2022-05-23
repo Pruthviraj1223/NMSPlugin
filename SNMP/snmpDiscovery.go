@@ -56,11 +56,17 @@ func Discovery(data map[string]interface{}) map[string]interface{} {
 
 	}
 
-	_, err = params.Get([]string{"1.3.6.1.2.1.1.5.0"})
+	res, err := params.Get([]string{".1.3.6.1.2.1.1.5.0"})
 
 	if err != nil {
 
 		errorList = append(errorList, err.Error())
+
+	}
+
+	for _, outcome := range res.Variables {
+
+		result["systemName"] = string(outcome.Value.([]byte))
 
 	}
 
@@ -84,8 +90,6 @@ func Discovery(data map[string]interface{}) map[string]interface{} {
 
 	}
 
-	var interfaceMap = make(map[string]interface{})
-
 	var listOfMap []map[string]interface{}
 
 	for i := 0; i < len(list); i++ {
@@ -100,7 +104,11 @@ func Discovery(data map[string]interface{}) map[string]interface{} {
 
 		ans, _ := params.Get(newList)
 
+		var interfaceMap = make(map[string]interface{})
+
 		for _, outcome := range ans.Variables {
+
+			// copy plugin to that
 
 			if strings.Contains(outcome.Name, "1.31.1") {
 
@@ -111,6 +119,16 @@ func Discovery(data map[string]interface{}) map[string]interface{} {
 				ch, _ := strconv.Atoi(strArr[0])
 
 				fmt.Println("new one ", ch)
+
+				switch ch {
+
+				case 1:
+					interfaceMap["interfaceName"] = string(outcome.Value.([]byte))
+
+				case 18:
+					interfaceMap["alias"] = string(outcome.Value.([]byte))
+
+				}
 
 			} else {
 				VariableName := strings.SplitAfter(outcome.Name, ".1.3.6.1.2.1.2.2.1.")
@@ -166,8 +184,6 @@ func Discovery(data map[string]interface{}) map[string]interface{} {
 	if len(errorList) == 0 {
 
 		result["status"] = "success"
-
-		result["objects"] = dataMap
 
 	} else {
 

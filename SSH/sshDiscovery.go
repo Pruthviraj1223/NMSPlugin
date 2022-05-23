@@ -44,7 +44,7 @@ func Discovery(data map[string]interface{}) map[string]interface{} {
 
 	fmt.Println(addr)
 
-	_, err := ssh.Dial("tcp", addr, config)
+	sshClient, err := ssh.Dial("tcp", addr, config)
 
 	if err != nil {
 
@@ -52,36 +52,21 @@ func Discovery(data map[string]interface{}) map[string]interface{} {
 
 	}
 
-	//session, err := sshClient.NewSession()
-	//
-	//if err != nil {
-	//	fmt.Println("err ", err.Error())
-	//
-	//}
-	//
-	//defer func(session *ssh.Session) {
-	//	err := session.Close()
-	//	if err != nil {
-	//
-	//	}
-	//}(session)
-	//
-	//defer func(Conn ssh.Conn) {
-	//	err := Conn.Close()
-	//	if err != nil {
-	//
-	//	}
-	//}(sshClient.Conn)
-	//
-	//_, err = session.Output("uname") // available
-	//
-	//if err != nil {
-	//	errorList = append(errorList, err.Error())
-	//}
+	session, err := sshClient.NewSession()
+
+	res, err := session.Output("uname -n") // available
+
+	if err != nil {
+		errorList = append(errorList, err.Error())
+	}
+
+	ans := string(res)
 
 	if len(errorList) == 0 {
 
 		result["status"] = "success"
+
+		result["hostname"] = strings.Trim(ans, "\n")
 
 	} else {
 
