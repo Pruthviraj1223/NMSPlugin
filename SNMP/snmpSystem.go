@@ -5,12 +5,13 @@ import (
 	"fmt"
 	g "github.com/gosnmp/gosnmp"
 	"log"
+	"strings"
 	"time"
 )
 
 func System(data map[string]interface{}) {
 
-	host := data["ip.address"].(string)
+	host := data["ip"].(string)
 
 	port := int((data["port"]).(float64))
 
@@ -20,7 +21,7 @@ func System(data map[string]interface{}) {
 
 		Target: host,
 
-		Port: uint16((port)),
+		Port: uint16(port),
 
 		Community: community,
 
@@ -65,7 +66,7 @@ func System(data map[string]interface{}) {
 
 		case ".1.3.6.1.2.1.1.1.0":
 			sysDescription = string(variable.Value.([]byte))
-			systemMap["system.description"] = sysDescription
+			systemMap["system.description"] = strings.Trim(sysDescription, "\r\n")
 
 		case ".1.3.6.1.2.1.1.2.0":
 			sysOID = fmt.Sprintf("%v", variable.Value)
@@ -78,7 +79,7 @@ func System(data map[string]interface{}) {
 		}
 	}
 
-	bytes, _ := json.MarshalIndent(systemMap, " ", " ")
+	bytes, _ := json.Marshal(systemMap)
 
 	fmt.Println(string(bytes))
 

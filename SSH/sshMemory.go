@@ -4,17 +4,30 @@ import (
 	"encoding/json"
 	"fmt"
 	"golang.org/x/crypto/ssh"
-	"strconv"
+	"strings"
 	"time"
 )
 
 func Memory(data map[string]interface{}) {
 
+	defer func() {
+
+		if r := recover(); r != nil {
+
+			res := make(map[string]interface{})
+
+			res["error"] = r
+
+			errorDisplay(res)
+
+		}
+	}()
+
 	sshUser := (data["name"]).(string)
 
 	sshPassword := (data["password"]).(string)
 
-	sshHost := (data["ip.address"]).(string)
+	sshHost := (data["ip"]).(string)
 
 	sshPort := int((data["port"]).(float64))
 
@@ -39,6 +52,9 @@ func Memory(data map[string]interface{}) {
 	sshClient, err := ssh.Dial("tcp", address, config)
 
 	if err != nil {
+
+		panic(err.Error())
+
 	}
 
 	defer sshClient.Close()
@@ -81,28 +97,19 @@ func Memory(data map[string]interface{}) {
 
 	session, err = sshClient.NewSession()
 
-	fmt.Println("ready")
-
-	fmt.Println(string(available), " ", string(freeMemory), " ", string(usedMemory), " ", string(totalMemory), " ", string(swapTotal), " ", string(swapUsed), " ", string(swapFree))
-
-	usedMemoryInt, _ := strconv.ParseFloat(string(usedMemory), 64)
-
-	totalInt, _ := strconv.Atoi(string(totalMemory))
-
-	fmt.Println(usedMemoryInt, totalInt)
-
 	result := map[string]interface{}{
+
 		"Device":          "linux",
-		"freeMemory":      string(freeMemory),
-		"usedMemory":      string(usedMemory),
-		"totalMemory":     string(totalMemory),
-		"availableMemory": string(available),
-		"swapTotal":       string(swapTotal),
-		"swapUsed":        string(swapUsed),
-		"swapFree":        string(swapFree),
+		"freeMemory":      strings.Trim(string(freeMemory), "\n"),
+		"usedMemory":      strings.Trim(string(usedMemory), "\n"),
+		"totalMemory":     strings.Trim(string(totalMemory), "\n"),
+		"availableMemory": strings.Trim(string(available), "\n"),
+		"swapTotal":       strings.Trim(string(swapTotal), "\n"),
+		"swapUsed":        strings.Trim(string(swapUsed), "\n"),
+		"swapFree":        strings.Trim(string(swapFree), "\n"),
 	}
 
-	bytes, _ := json.MarshalIndent(result, " ", " ")
+	bytes, _ := json.Marshal(result)
 
 	fmt.Println(string(bytes))
 

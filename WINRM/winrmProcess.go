@@ -9,7 +9,20 @@ import (
 
 func Process(data map[string]interface{}) {
 
-	host := data["ip.address"].(string)
+	defer func() {
+
+		if r := recover(); r != nil {
+
+			res := make(map[string]interface{})
+
+			res["error"] = r
+
+			errorDisplay(res)
+
+		}
+	}()
+
+	host := data["ip"].(string)
 
 	port := int((data["port"]).(float64))
 
@@ -82,7 +95,15 @@ func Process(data map[string]interface{}) {
 
 	processMap["process"] = processList
 
-	bytes, _ := json.MarshalIndent(processMap, " ", " ")
+	bytes, _ := json.Marshal(processMap)
 
 	fmt.Println(string(bytes))
+}
+
+func errorDisplay(res map[string]interface{}) {
+
+	bytes, _ := json.Marshal(res)
+
+	fmt.Println(string(bytes))
+
 }

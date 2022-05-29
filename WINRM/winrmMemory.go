@@ -9,7 +9,7 @@ import (
 
 func Memory(data map[string]interface{}) {
 
-	host := data["ip.address"].(string)
+	host := data["ip"].(string)
 
 	port := int((data["port"]).(float64))
 
@@ -44,7 +44,7 @@ func Memory(data map[string]interface{}) {
 		"total.virtual.memory": memoryStringArray[2],
 	}
 
-	bytes, _ := json.MarshalIndent(result, " ", " ")
+	bytes, _ := json.Marshal(result)
 
 	fmt.Println(string(bytes))
 

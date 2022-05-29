@@ -10,11 +10,24 @@ import (
 
 func System(data map[string]interface{}) {
 
+	defer func() {
+
+		if r := recover(); r != nil {
+
+			res := make(map[string]interface{})
+
+			res["error"] = r
+
+			errorDisplay(res)
+
+		}
+	}()
+
 	sshUser := (data["name"]).(string)
 
 	sshPassword := (data["password"]).(string)
 
-	sshHost := (data["ip.address"]).(string)
+	sshHost := (data["ip"]).(string)
 
 	sshPort := int((data["port"]).(float64))
 
@@ -61,14 +74,13 @@ func System(data map[string]interface{}) {
 
 		output := strings.SplitN(standardizeSpaces(v), " ", 17)
 
-		fmt.Println(output)
-
 		systemMap["system.runningProcess"] = output[0]
 		systemMap["system.blockingProcess"] = output[1]
 		systemMap["system.context.switches"] = output[11]
 
 	}
-	sesion.Close()
+
+	defer sesion.Close()
 
 	sesion, _ = sshClient.NewSession()
 
@@ -84,7 +96,7 @@ func System(data map[string]interface{}) {
 
 	systemMap["system.uptime"] = strArray[5] + " " + strArray[6] + " " + strArray[7] + " " + strArray[8]
 
-	bytes, _ := json.MarshalIndent(systemMap, " ", " ")
+	bytes, _ := json.Marshal(systemMap)
 
 	fmt.Println(string(bytes))
 

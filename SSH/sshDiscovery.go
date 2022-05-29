@@ -12,6 +12,19 @@ import (
 
 func Discovery(data map[string]interface{}) map[string]interface{} {
 
+	defer func() {
+
+		if r := recover(); r != nil {
+
+			res := make(map[string]interface{})
+
+			res["error"] = r
+
+			errorDisplay(res)
+
+		}
+	}()
+
 	sshPort := int((data["port"]).(float64))
 
 	sshHost := (data["ip"]).(string)
@@ -36,45 +49,51 @@ func Discovery(data map[string]interface{}) map[string]interface{} {
 
 	var result = make(map[string]interface{})
 
-	var errorList []string
-
 	config.Auth = []ssh.AuthMethod{ssh.Password(sshPassword)}
 
 	addr := fmt.Sprintf("%s:%d", sshHost, sshPort)
 
-	fmt.Println(addr)
+	sshClient, clientErr := ssh.Dial("tcp", addr, config)
 
-	sshClient, err := ssh.Dial("tcp", addr, config)
+	if clientErr != nil {
 
-	if err != nil {
+		result["status"] = "fail"
 
-		errorList = append(errorList, err.Error())
+		result["error"] = clientErr.Error()
+
+		return result
 
 	}
 
 	session, err := sshClient.NewSession()
 
-	res, err := session.Output("uname -n") // available
+	if err != nil {
+
+		result["status"] = "fail"
+
+		result["error"] = clientErr.Error()
+
+		return result
+
+	}
+
+	res, err := session.CombinedOutput("uname -n") // available
 
 	if err != nil {
-		errorList = append(errorList, err.Error())
+
+		result["status"] = "fail"
+
+		result["error"] = clientErr.Error()
+
+		return result
+
 	}
 
 	ans := string(res)
 
-	if len(errorList) == 0 {
+	result["hostname"] = strings.Trim(ans, "\n")
 
-		result["status"] = "success"
-
-		result["hostname"] = strings.Trim(ans, "\n")
-
-	} else {
-
-		result["status"] = "fail"
-
-		result["error"] = errorList
-
-	}
+	result["status"] = "success"
 
 	return result
 }

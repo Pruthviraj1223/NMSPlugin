@@ -9,7 +9,7 @@ import (
 
 func Cpu(data map[string]interface{}) {
 
-	host := data["ip.address"].(string)
+	host := data["ip"].(string)
 
 	port := int((data["port"]).(float64))
 
@@ -74,7 +74,7 @@ func Cpu(data map[string]interface{}) {
 
 	cpuMap["CPU"] = cpuList
 
-	bytes, _ := json.MarshalIndent(cpuMap, " ", " ")
+	bytes, _ := json.Marshal(cpuMap)
 
 	fmt.Println(string(bytes))
 

@@ -18,7 +18,7 @@ func main() {
 
 	if err != nil {
 
-		panic(err)
+		fmt.Println(err.Error())
 
 	}
 
@@ -44,25 +44,36 @@ func main() {
 
 		} else if data["category"] == "polling" {
 
-			if data["counter"] == "disk" {
+			if data["metricGroup"] == "disk" {
 
 				SSH.Disk(data)
 
-			} else if data["counter"] == "CPU" {
+			} else if data["metricGroup"] == "cpu" {
 
 				SSH.Cpu(data)
 
-			} else if data["counter"] == "Memory" {
+			} else if data["metricGroup"] == "memory" {
 
 				SSH.Memory(data)
 
-			} else if data["counter"] == "Process" {
+			} else if data["metricGroup"] == "process" {
 
 				SSH.Process(data)
 
-			} else if data["counter"] == "SystemInfo" {
+			} else if data["metricGroup"] == "SystemInfo" {
 
 				SSH.System(data)
+
+			} else {
+
+				res := make(map[string]interface{})
+
+				res["error"] = "Invalid metricGroup"
+
+				bytes, _ := json.Marshal(res)
+
+				fmt.Println(string(bytes))
+
 			}
 
 		}
@@ -79,21 +90,35 @@ func main() {
 
 		} else if data["category"] == "polling" {
 
-			if data["counter"] == "disk" {
+			if data["metricGroup"] == "disk" {
 
 				WINRM.Disk(data)
 
-			} else if data["counter"] == "CPU" {
+			} else if data["metricGroup"] == "cpu" {
 
 				WINRM.Cpu(data)
 
-			} else if data["counter"] == "process" {
+			} else if data["metricGroup"] == "process" {
 
 				WINRM.Process(data)
 
-			} else if data["counter"] == "memory" {
+			} else if data["metricGroup"] == "memory" {
 
 				WINRM.Memory(data)
+
+			} else if data["metricGroup"] == "SystemInfo" {
+
+				WINRM.System(data)
+
+			} else {
+
+				res := make(map[string]interface{})
+
+				res["error"] = "Invalid metricGroup"
+
+				bytes, _ := json.Marshal(res)
+
+				fmt.Println(string(bytes))
 
 			}
 
@@ -110,16 +135,36 @@ func main() {
 
 		} else if data["category"] == "polling" {
 
-			if data["counter"] == "systemInfo" {
+			if data["metricGroup"] == "systemInfo" {
 
 				SNMP.System(data)
 
-			} else if data["counter"] == "interface" {
+			} else if data["metricGroup"] == "interface" {
 
 				SNMP.Interface(data)
 
+			} else {
+
+				res := make(map[string]interface{})
+
+				res["error"] = "Invalid metricGroup...."
+
+				bytes, _ := json.Marshal(res)
+
+				fmt.Println(string(bytes))
+
 			}
 		}
+	} else {
+
+		res := make(map[string]interface{})
+
+		res["error"] = "Invalid type"
+
+		bytes, _ := json.Marshal(res)
+
+		fmt.Println(string(bytes))
+
 	}
 
 }

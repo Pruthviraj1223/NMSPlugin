@@ -1,7 +1,6 @@
 package SNMP
 
 import (
-	"fmt"
 	g "github.com/gosnmp/gosnmp"
 	"strconv"
 	"strings"
@@ -48,11 +47,13 @@ func Discovery(data map[string]interface{}) map[string]interface{} {
 
 	var result = make(map[string]interface{})
 
-	var errorList []string
-
 	if err != nil {
 
-		errorList = append(errorList, err.Error())
+		result["status"] = "fail"
+
+		result["error"] = err.Error()
+
+		return result
 
 	}
 
@@ -60,7 +61,11 @@ func Discovery(data map[string]interface{}) map[string]interface{} {
 
 	if err != nil {
 
-		errorList = append(errorList, err.Error())
+		result["status"] = "fail"
+
+		result["error"] = err.Error()
+
+		return result
 
 	}
 
@@ -86,7 +91,11 @@ func Discovery(data map[string]interface{}) map[string]interface{} {
 
 	if err != nil {
 
-		errorList = append(errorList, err.Error())
+		result["status"] = "fail"
+
+		result["error"] = err.Error()
+
+		return result
 
 	}
 
@@ -118,8 +127,6 @@ func Discovery(data map[string]interface{}) map[string]interface{} {
 
 				ch, _ := strconv.Atoi(strArr[0])
 
-				fmt.Println("new one ", ch)
-
 				switch ch {
 
 				case 1:
@@ -137,16 +144,13 @@ func Discovery(data map[string]interface{}) map[string]interface{} {
 
 				ch, _ := strconv.Atoi(strArr[0])
 
-				fmt.Println("name ", outcome.Name, " val = ", outcome.Value, " strArr = ", ch)
-
 				switch ch {
 
 				case 1:
+
 					interfaceMap["index"] = outcome.Value
 
 				case 2:
-
-					fmt.Println(outcome.Value.([]byte))
 
 					interfaceMap["interface.Description"] = string(outcome.Value.([]byte))
 
@@ -181,17 +185,9 @@ func Discovery(data map[string]interface{}) map[string]interface{} {
 
 	dataMap["interface"] = listOfMap
 
-	if len(errorList) == 0 {
+	result["status"] = "success"
 
-		result["status"] = "success"
-
-	} else {
-
-		result["status"] = "fail"
-
-		result["error"] = errorList
-
-	}
+	result["result"] = dataMap
 
 	return result
 }

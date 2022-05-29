@@ -15,7 +15,7 @@ func standardizeSpaces(s string) string {
 
 func Disk(data map[string]interface{}) {
 
-	host := data["ip.address"].(string)
+	host := data["ip"].(string)
 
 	port := int((data["port"]).(float64))
 
@@ -92,7 +92,7 @@ func Disk(data map[string]interface{}) {
 
 	diskMap["disk"] = diskList
 
-	bytes, _ := json.MarshalIndent(diskMap, " ", " ")
+	bytes, _ := json.Marshal(diskMap)
 
 	fmt.Println(string(bytes))
 

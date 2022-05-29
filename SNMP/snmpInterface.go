@@ -13,7 +13,7 @@ var list []int
 
 func Interface(data map[string]interface{}) {
 
-	host := data["ip.address"].(string)
+	host := data["ip"].(string)
 
 	port := int((data["port"]).(float64))
 
@@ -195,9 +195,10 @@ func Interface(data map[string]interface{}) {
 	}
 
 	var dataMap = make(map[string]interface{})
+
 	dataMap["interface"] = listOfMap
 
-	bytes, _ := json.MarshalIndent(dataMap, " ", " ")
+	bytes, _ := json.Marshal(dataMap)
 
 	fmt.Println(string(bytes))
 

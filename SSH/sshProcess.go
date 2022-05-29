@@ -10,11 +10,24 @@ import (
 
 func Process(data map[string]interface{}) {
 
+	defer func() {
+
+		if r := recover(); r != nil {
+
+			res := make(map[string]interface{})
+
+			res["error"] = r
+
+			errorDisplay(res)
+
+		}
+	}()
+
 	sshUser := (data["name"]).(string)
 
 	sshPassword := (data["password"]).(string)
 
-	sshHost := (data["ip.address"]).(string)
+	sshHost := (data["ip"]).(string)
 
 	sshPort := int((data["port"]).(float64))
 
@@ -39,7 +52,8 @@ func Process(data map[string]interface{}) {
 	sshClient, err := ssh.Dial("tcp", addr, config)
 
 	if err != nil {
-		panic(err.Error())
+
+		err.Error()
 	}
 
 	defer sshClient.Close()
@@ -77,7 +91,6 @@ func Process(data map[string]interface{}) {
 			"process.id":     eachWorld[1],
 			"process.cpu":    eachWorld[2],
 			"process.memory": eachWorld[3],
-			"Process.commad": eachWorld[10],
 		}
 
 		processList = append(processList, temp1)
@@ -88,7 +101,7 @@ func Process(data map[string]interface{}) {
 
 	processMap["Process"] = processList
 
-	bytes, _ := json.MarshalIndent(processMap, " ", " ")
+	bytes, _ := json.Marshal(processMap)
 
 	fmt.Println(string(bytes))
 

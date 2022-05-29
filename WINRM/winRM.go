@@ -17,35 +17,46 @@ func Discovery(data map[string]interface{}) map[string]interface{} {
 
 	endpoint := winrm.NewEndpoint(host, port, false, false, nil, nil, nil, 0)
 
+	var result = make(map[string]interface{})
+
 	client, err := winrm.NewClient(endpoint, name, password)
 
+	if err != nil {
+
+		result["status"] = "fail"
+
+		result["error"] = err.Error()
+
+		return result
+	}
+
 	_, err = client.CreateShell()
+
+	if err != nil {
+
+		result["status"] = "fail"
+
+		result["error"] = err.Error()
+
+		return result
+	}
 
 	a := "aa"
 
 	hostname, _, _, err := client.RunPSWithString("hostname", a)
 
-	var errorList []string
-
 	if err != nil {
-		errorList = append(errorList, err.Error())
-	}
-
-	var result = make(map[string]interface{})
-
-	if len(errorList) == 0 {
-
-		result["status"] = "success"
-
-		result["hostname"] = strings.Trim(hostname, "\r\n")
-
-	} else {
 
 		result["status"] = "fail"
 
-		result["error"] = errorList
+		result["error"] = err.Error()
 
+		return result
 	}
+
+	result["status"] = "success"
+
+	result["hostname"] = strings.Trim(hostname, "\r\n")
 
 	return result
 }

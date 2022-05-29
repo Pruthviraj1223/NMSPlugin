@@ -11,11 +11,25 @@ import (
 
 func Disk(data map[string]interface{}) {
 
+	defer func() {
+
+		if r := recover(); r != nil {
+
+			res := make(map[string]interface{})
+
+			res["error"] = r
+
+			errorDisplay(res)
+
+		}
+
+	}()
+
 	sshUser := (data["name"]).(string)
 
 	sshPassword := (data["password"]).(string)
 
-	sshHost := (data["ip.address"]).(string)
+	sshHost := (data["ip"]).(string)
 
 	sshPort := int((data["port"]).(float64))
 
@@ -39,15 +53,13 @@ func Disk(data map[string]interface{}) {
 
 	sshClient, err := ssh.Dial("tcp", addr, config)
 
-	if err != nil {
-		fmt.Println(err.Error())
-	}
-
 	defer sshClient.Close()
 
 	session, err := sshClient.NewSession()
 
 	if err != nil {
+
+		panic(err.Error())
 
 	}
 
@@ -109,7 +121,7 @@ func Disk(data map[string]interface{}) {
 
 	diskMap["Disk"] = diskList
 
-	bytes, _ := json.MarshalIndent(diskMap, " ", " ")
+	bytes, _ := json.Marshal(diskMap)
 
 	fmt.Println(string(bytes))
 
