@@ -135,7 +135,7 @@ func main() {
 
 		} else if data["category"] == "polling" {
 
-			if data["metricGroup"] == "systemInfo" {
+			if data["metricGroup"] == "SystemInfo" {
 
 				SNMP.System(data)
 

@@ -6,26 +6,14 @@ import (
 	_ "fmt"
 	"golang.org/x/crypto/ssh"
 	_ "golang.org/x/crypto/ssh"
+
 	"strings"
 	"time"
 )
 
 func Discovery(data map[string]interface{}) map[string]interface{} {
 
-	defer func() {
-
-		if r := recover(); r != nil {
-
-			res := make(map[string]interface{})
-
-			res["error"] = r
-
-			errorDisplay(res)
-
-		}
-	}()
-
-	sshPort := int((data["port"]).(float64))
+	sshPort := data["port"]
 
 	sshHost := (data["ip"]).(string)
 
@@ -35,7 +23,7 @@ func Discovery(data map[string]interface{}) map[string]interface{} {
 
 	config := &ssh.ClientConfig{
 
-		Timeout: 10 * time.Second,
+		Timeout: 5 * time.Second,
 
 		User: sshUser,
 
@@ -51,7 +39,7 @@ func Discovery(data map[string]interface{}) map[string]interface{} {
 
 	config.Auth = []ssh.AuthMethod{ssh.Password(sshPassword)}
 
-	addr := fmt.Sprintf("%s:%d", sshHost, sshPort)
+	addr := fmt.Sprintf("%s:%v", sshHost, sshPort)
 
 	sshClient, clientErr := ssh.Dial("tcp", addr, config)
 
@@ -64,6 +52,8 @@ func Discovery(data map[string]interface{}) map[string]interface{} {
 		return result
 
 	}
+
+	defer sshClient.Close()
 
 	session, err := sshClient.NewSession()
 

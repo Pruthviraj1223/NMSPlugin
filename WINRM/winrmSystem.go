@@ -1,8 +1,10 @@
 package WINRM
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/masterzen/winrm"
+	"strings"
 )
 
 func System(data map[string]interface{}) {
@@ -35,26 +37,28 @@ func System(data map[string]interface{}) {
 
 	sysName, _, _, err := client.RunPSWithString(commandForName, a)
 
-	systemMap["SystemName"] = sysName
+	systemMap["SystemName"] = strings.Replace(sysName, "\r\n", " ", 3)
 
 	commandForVersion := "(Get-WMIObject win32_operatingsystem).version"
 
 	sysVersion, _, _, err := client.RunPSWithString(commandForVersion, a)
 
-	systemMap["systemVersion"] = sysVersion
+	systemMap["systemVersion"] = strings.Replace(sysVersion, "\r\n", " ", 3)
 
 	name1 := "whoami"
 
 	uname, _, _, err := client.RunPSWithString(name1, a)
 
-	systemMap["uname"] = uname
+	systemMap["uname"] = strings.Replace(uname, "\r\n", " ", 3)
 
 	sysUpTime := "(Get-WMIObject win32_operatingsystem).LastBootUpTime;"
 
 	sysTime, _, _, err := client.RunPSWithString(sysUpTime, a)
 
-	systemMap["systemUpTime"] = sysTime
+	systemMap["systemUpTime"] = strings.Replace(sysTime, "\r\n", " ", 3)
 
-	fmt.Println(systemMap)
+	bytes, _ := json.Marshal(systemMap)
+
+	fmt.Println(string(bytes))
 
 }

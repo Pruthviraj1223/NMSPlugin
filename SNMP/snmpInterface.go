@@ -19,6 +19,20 @@ func Interface(data map[string]interface{}) {
 
 	community := (data["community"]).(string)
 
+	version := g.Version2c
+
+	switch data["version"] {
+
+	case "v1":
+		version = g.Version1
+		break
+
+	case "v2":
+		version = g.Version2c
+		break
+
+	}
+
 	params := &g.GoSNMP{
 
 		Target: host,
@@ -27,7 +41,7 @@ func Interface(data map[string]interface{}) {
 
 		Community: community,
 
-		Version: g.Version2c,
+		Version: version,
 
 		Timeout: time.Duration(2) * time.Second,
 	}
@@ -72,8 +86,6 @@ func Interface(data map[string]interface{}) {
 		return
 	}
 
-	var interfaceMap = make(map[string]interface{})
-
 	var listOfMap []map[string]interface{}
 
 	for i := 0; i < len(list); i++ {
@@ -81,20 +93,26 @@ func Interface(data map[string]interface{}) {
 		var newList []string
 
 		for j := 0; j < len(oidList); j++ {
+
 			newList = append(newList, oidList[j]+strconv.Itoa(list[i]))
+
 		}
 
 		ans, _ := params.Get(newList)
 
+		var interfaceMap = make(map[string]interface{})
+
+		fmt.Println("new ", newList)
+
 		for _, result := range ans.Variables {
+
+			fmt.Println("name ", result.Name, " ", result.Value)
 
 			VariableName := strings.SplitAfter(result.Name, ".1.3.6.1.2.1.2.2.1.")
 
 			strArr := strings.Split(VariableName[1], ".")
 
 			ch, _ := strconv.Atoi(strArr[0])
-
-			var typevalue string
 
 			switch ch {
 
@@ -107,62 +125,68 @@ func Interface(data map[string]interface{}) {
 				switch (result.Value).(int) {
 
 				case 6:
-					typevalue = "ethernetCsmacd"
+					interfaceMap["interface.Type"] = "ethernetCsmacd"
 				case 1:
-					typevalue = "other"
+					interfaceMap["interface.Type"] = "other"
 				case 135:
-					typevalue = "l2vlan"
+					interfaceMap["interface.Type"] = "l2vlan"
 				case 53:
-					typevalue = "propVirtual"
+					interfaceMap["interface.Type"] = "propVirtual"
 				case 24:
-					typevalue = "softwareLoopback"
+					interfaceMap["interface.Type"] = "softwareLoopback"
 				case 131:
-					typevalue = "tunnel"
+					interfaceMap["interface.Type"] = "tunnel"
 				}
 
-				interfaceMap["interface.Type"] = typevalue
 				// 5 6 10 16
 
 			case 5:
 
+				interfaceMap["interface.ifSpeed"] = result.Value
+
 			case 6:
 
+				interfaceMap["interface.ifPhysAddress"] = fmt.Sprintf("%x", result.Value)
+
 			case 7:
-				var Adminvalue string
 
 				if result.Value.(int) == 1 {
 
-					Adminvalue = "Up"
+					interfaceMap["interface.admin.status"] = "Up"
 
 				}
 
 				if result.Value.(int) == 2 {
 
-					Adminvalue = "Down"
+					interfaceMap["interface.admin.status"] = "Down"
 
 				}
-
-				interfaceMap["interface.admin.status"] = Adminvalue
 
 			case 8:
 
-				var operatingvalue string
-
 				if result.Value.(int) == 1 {
 
-					operatingvalue = "Up"
+					interfaceMap["interface.operating.status"] = "Up"
 
 				}
 
 				if result.Value.(int) == 2 {
 
-					operatingvalue = "Down"
+					interfaceMap["interface.operating.status"] = "Down"
 
 				}
 
-				interfaceMap["interface.operating.status"] = operatingvalue
-
 			case 10:
+
+				if result.Value != nil {
+
+					interfaceMap["interface.ifInOctets"] = result.Value.(uint)
+
+				} else {
+
+					interfaceMap["interface.ifInOctets"] = ""
+
+				}
 
 			case 14:
 
@@ -177,6 +201,16 @@ func Interface(data map[string]interface{}) {
 				}
 
 			case 16:
+
+				if result.Value != nil {
+
+					interfaceMap["interface.ifOutOctets"] = result.Value.(uint)
+
+				} else {
+
+					interfaceMap["interface.ifOutOctets"] = ""
+
+				}
 
 			case 20:
 

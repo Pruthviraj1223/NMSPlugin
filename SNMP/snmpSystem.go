@@ -66,7 +66,7 @@ func System(data map[string]interface{}) {
 
 		case ".1.3.6.1.2.1.1.1.0":
 			sysDescription = string(variable.Value.([]byte))
-			systemMap["system.description"] = strings.Trim(sysDescription, "\r\n")
+			systemMap["system.description"] = strings.Replace(sysDescription, "\r\n", " ", 3)
 
 		case ".1.3.6.1.2.1.1.2.0":
 			sysOID = fmt.Sprintf("%v", variable.Value)

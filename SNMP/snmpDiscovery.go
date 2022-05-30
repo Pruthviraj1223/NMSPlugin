@@ -1,6 +1,8 @@
 package SNMP
 
 import (
+	"encoding/json"
+	"fmt"
 	g "github.com/gosnmp/gosnmp"
 	"strconv"
 	"strings"
@@ -8,6 +10,20 @@ import (
 )
 
 func Discovery(data map[string]interface{}) map[string]interface{} {
+
+	defer func() {
+
+		if r := recover(); r != nil {
+
+			res := make(map[string]interface{})
+
+			res["error"] = r
+
+			errorDisplay(res)
+
+		}
+
+	}()
 
 	host := data["ip"].(string)
 
@@ -38,12 +54,10 @@ func Discovery(data map[string]interface{}) map[string]interface{} {
 
 		Version: version,
 
-		Timeout: time.Duration(2) * time.Second,
+		Timeout: 5 * time.Second,
 	}
 
 	err := params.Connect()
-
-	defer params.Conn.Close()
 
 	var result = make(map[string]interface{})
 
@@ -56,6 +70,8 @@ func Discovery(data map[string]interface{}) map[string]interface{} {
 		return result
 
 	}
+
+	defer params.Conn.Close()
 
 	res, err := params.Get([]string{".1.3.6.1.2.1.1.5.0"})
 
@@ -190,4 +206,12 @@ func Discovery(data map[string]interface{}) map[string]interface{} {
 	result["result"] = dataMap
 
 	return result
+}
+
+func errorDisplay(res map[string]interface{}) {
+
+	bytes, _ := json.Marshal(res)
+
+	fmt.Println(string(bytes))
+
 }
