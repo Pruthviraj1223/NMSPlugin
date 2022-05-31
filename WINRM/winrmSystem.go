@@ -9,6 +9,20 @@ import (
 
 func System(data map[string]interface{}) {
 
+	defer func() {
+
+		if r := recover(); r != nil {
+
+			res := make(map[string]interface{})
+
+			res["error"] = r
+
+			errorDisplay(res)
+
+		}
+
+	}()
+
 	host := data["ip"].(string)
 
 	port := int((data["port"]).(float64))
@@ -21,14 +35,6 @@ func System(data map[string]interface{}) {
 
 	client, err := winrm.NewClient(endpoint, name, password)
 
-	_, err = client.CreateShell()
-
-	if err != nil {
-
-		err.Error()
-
-	}
-
 	systemMap := make(map[string]interface{})
 
 	commandForName := "(Get-WmiObject win32_operatingsystem).name"
@@ -37,28 +43,42 @@ func System(data map[string]interface{}) {
 
 	sysName, _, _, err := client.RunPSWithString(commandForName, a)
 
-	systemMap["SystemName"] = strings.Replace(sysName, "\r\n", " ", 3)
+	updateName := strings.Replace(sysName, "\r\n", " ", -1)
+
+	systemMap["system.name"] = strings.Replace(updateName, "\\", "", -1)
 
 	commandForVersion := "(Get-WMIObject win32_operatingsystem).version"
 
 	sysVersion, _, _, err := client.RunPSWithString(commandForVersion, a)
 
-	systemMap["systemVersion"] = strings.Replace(sysVersion, "\r\n", " ", 3)
+	systemMap["system.version"] = strings.Replace(sysVersion, "\r\n", " ", -1)
 
-	name1 := "whoami"
+	username := "whoami"
 
-	uname, _, _, err := client.RunPSWithString(name1, a)
+	uname, _, _, err := client.RunPSWithString(username, a)
 
-	systemMap["uname"] = strings.Replace(uname, "\r\n", " ", 3)
+	systemMap["uname"] = strings.Replace(strings.Replace(uname, "\r\n", " ", -1), "\\", "", -1)
 
 	sysUpTime := "(Get-WMIObject win32_operatingsystem).LastBootUpTime;"
 
 	sysTime, _, _, err := client.RunPSWithString(sysUpTime, a)
 
-	systemMap["systemUpTime"] = strings.Replace(sysTime, "\r\n", " ", 3)
+	systemMap["system.up.time"] = strings.Replace(sysTime, "\r\n", " ", -1)
 
-	bytes, _ := json.Marshal(systemMap)
+	bytes, err := json.Marshal(systemMap)
 
-	fmt.Println(string(bytes))
+	if err != nil {
+
+		response := make(map[string]interface{})
+
+		response["error"] = err.Error()
+
+		errorDisplay(response)
+
+	} else {
+
+		fmt.Println(string(bytes))
+
+	}
 
 }

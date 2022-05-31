@@ -15,85 +15,125 @@ func standardizeSpaces(s string) string {
 
 func Disk(data map[string]interface{}) {
 
-	host := data["ip"].(string)
+	defer func() {
+
+		if r := recover(); r != nil {
+
+			res := make(map[string]interface{})
+
+			res["error"] = r
+
+			errorDisplay(res)
+
+		}
+
+	}()
+
+	var errorList []string
+
+	//host := data["ip"].(string)
 
 	port := int((data["port"]).(float64))
+	//
+	//name := (data["name"]).(string)
+	//
+	//password := (data["password"]).(string)
 
-	name := (data["name"]).(string)
+	endpoint := winrm.NewEndpoint(data["ip"].(string), port, false, false, nil, nil, nil, 0)
 
-	password := (data["password"]).(string)
-
-	endpoint := winrm.NewEndpoint(host, port, false, false, nil, nil, nil, 0)
-
-	client, err := winrm.NewClient(endpoint, name, password)
-
-	_, err = client.CreateShell()
+	client, err := winrm.NewClient(endpoint, data["name"].(string), data["password"].(string))
 
 	if err != nil {
 
-		err.Error()
+		errorList = append(errorList, err.Error())
 
 	}
 
-	a := "aa"
+	if len(errorList) == 0 {
 
-	var disk string
+		var disk string
 
-	commandForDisk := "Get-WmiObject win32_logicaldisk | Foreach-Object {$_.DeviceId,$_.Freespace,$_.Size -join \" \"}" //disksize
+		commandForDisk := "Get-WmiObject win32_logicaldisk | Foreach-Object {$_.DeviceId,$_.Freespace,$_.Size -join \" \"}"
 
-	disk, _, _, err = client.RunPSWithString(commandForDisk, a)
+		disk, aa, bb, err := client.RunPSWithString(commandForDisk, "")
 
-	var diskList []map[string]string
+		fmt.Println(aa)
 
-	diskStringArray := strings.Split(disk, "\n")
+		fmt.Println(bb)
 
-	for _, v := range diskStringArray {
+		var diskList []map[string]string
 
-		eachWord := strings.Split(standardizeSpaces(v), " ")
+		diskStringArray := strings.Split(disk, "\n")
 
-		if len(eachWord) == 0 {
+		for _, v := range diskStringArray {
 
-			break
+			eachWord := strings.Split(standardizeSpaces(v), " ")
 
-		}
+			if len(eachWord) == 0 {
 
-		if len(eachWord) == 3 {
+				break
 
-			temp := map[string]string{
-
-				"disk.name": eachWord[0],
-
-				"disk.free": eachWord[1],
-
-				"disk.size": eachWord[2],
 			}
 
-			diskList = append(diskList, temp)
+			if len(eachWord) == 3 {
 
-		}
-		if len(eachWord) == 1 {
+				temp := map[string]string{
 
-			temp := map[string]string{
+					"disk.name.bytes": eachWord[0],
 
-				"disk.name": eachWord[0],
+					"disk.free.bytes": eachWord[1],
 
-				"disk.free": "0",
+					"disk.size.bytes": eachWord[2],
+				}
 
-				"disk.size": "0",
+				diskList = append(diskList, temp)
+
+			}
+			if len(eachWord) == 1 {
+
+				temp := map[string]string{
+
+					"disk.name.bytes": eachWord[0],
+
+					"disk.free.bytes": "0",
+
+					"disk.size.bytes": "0",
+				}
+
+				diskList = append(diskList, temp)
+
 			}
 
-			diskList = append(diskList, temp)
+		}
+
+		var diskMap = make(map[string]interface{})
+
+		diskMap["disk"] = diskList
+
+		bytes, err := json.Marshal(diskMap)
+
+		if err != nil {
+
+			response := make(map[string]interface{})
+
+			response["error"] = err.Error()
+
+			errorDisplay(response)
+
+		} else {
+
+			fmt.Println(string(bytes))
 
 		}
+
+	} else {
+
+		res := make(map[string]interface{})
+
+		res["error"] = errorList
+
+		errorDisplay(res)
 
 	}
-
-	var diskMap = make(map[string]interface{})
-
-	diskMap["disk"] = diskList
-
-	bytes, _ := json.Marshal(diskMap)
-
-	fmt.Println(string(bytes))
 
 }

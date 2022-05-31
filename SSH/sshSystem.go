@@ -51,53 +51,114 @@ func System(data map[string]interface{}) {
 
 	sshClient, err := ssh.Dial("tcp", addr, config)
 
+	var errorList []string
+
 	if err != nil {
-		err.Error()
+
+		errorList = append(errorList, err.Error())
+
 	}
 
 	defer sshClient.Close()
 
-	sesion, _ := sshClient.NewSession()
+	session, err := sshClient.NewSession()
 
-	res, _ := sesion.Output("vmstat")
+	if err != nil {
 
-	splittedString := strings.Split(string(res), "\n")
-
-	var systemMap = make(map[string]interface{})
-
-	flag := 1
-	for _, v := range splittedString {
-		if flag == 1 || flag == 2 || v == "" {
-			flag++
-			continue
-		}
-
-		output := strings.SplitN(standardizeSpaces(v), " ", 17)
-
-		systemMap["system.runningProcess"] = output[0]
-		systemMap["system.blockingProcess"] = output[1]
-		systemMap["system.context.switches"] = output[11]
+		errorList = append(errorList, err.Error())
 
 	}
 
-	defer sesion.Close()
+	defer session.Close()
 
-	sesion, _ = sshClient.NewSession()
+	var systemMap = make(map[string]interface{})
 
-	res, _ = sesion.Output("uname -a")
+	if len(errorList) == 0 {
 
-	strArray := strings.Split(string(res), " ")
+		res, _ := session.Output("vmstat")
 
-	systemMap["system.user.name"] = strArray[1]
+		splittedString := strings.Split(string(res), "\n")
 
-	systemMap["system.os.name"] = strArray[0]
+		flag := 1
 
-	systemMap["system.os.version"] = strArray[3]
+		for _, v := range splittedString {
 
-	systemMap["system.uptime"] = strArray[5] + " " + strArray[6] + " " + strArray[7] + " " + strArray[8]
+			if flag == 1 || flag == 2 || v == "" {
 
-	bytes, _ := json.Marshal(systemMap)
+				flag++
 
-	fmt.Println(string(bytes))
+				continue
+
+			}
+
+			output := strings.SplitN(standardizeSpaces(v), " ", 17)
+
+			systemMap["system.running.process"] = output[0]
+
+			systemMap["system.blocking.process"] = output[1]
+
+			systemMap["system.context.switches"] = output[11]
+
+		}
+
+	} else {
+
+		var response = make(map[string]interface{})
+
+		response["error"] = errorList
+
+		errorDisplay(response)
+
+	}
+
+	sessionForSystem, err := sshClient.NewSession()
+
+	if err != nil {
+
+		errorList = append(errorList, err.Error())
+
+	}
+
+	defer sessionForSystem.Close()
+
+	if len(errorList) == 0 {
+
+		res, _ := session.Output("uname -a")
+
+		strArray := strings.Split(string(res), " ")
+
+		systemMap["system.user.name"] = strArray[1]
+
+		systemMap["system.os.name"] = strArray[0]
+
+		systemMap["system.os.version"] = strArray[3]
+
+		systemMap["system.uptime"] = strArray[5] + " " + strArray[6] + " " + strArray[7] + " " + strArray[8]
+
+		bytes, err := json.Marshal(systemMap)
+
+		if err != nil {
+
+			response := make(map[string]interface{})
+
+			response["error"] = err.Error()
+
+			errorDisplay(response)
+
+		} else {
+
+			fmt.Println(string(bytes))
+
+		}
+
+	} else {
+
+		var response = make(map[string]interface{})
+
+		response["error"] = errorList
+
+		errorDisplay(response)
+
+	}
 
 }

@@ -51,9 +51,11 @@ func Memory(data map[string]interface{}) {
 
 	sshClient, err := ssh.Dial("tcp", address, config)
 
+	var errorList []string
+
 	if err != nil {
 
-		panic(err.Error())
+		errorList = append(errorList, err.Error())
 
 	}
 
@@ -88,29 +90,45 @@ func Memory(data map[string]interface{}) {
 	session, err = sshClient.NewSession()
 
 	swapFree, err := session.Output("free -b | grep Swap | awk '{ printf(\"%i\\n\", $3) }'")
-	session.Close()
 
 	session, err = sshClient.NewSession()
 
 	swapTotal, err := session.Output("free -b | grep Swap | awk '{ printf(\"%i\\n\", $3) }'")
 	session.Close()
 
-	session, err = sshClient.NewSession()
+	session, err = sshClient.NewSession() // changes
 
 	result := map[string]interface{}{
 
-		"Device":          "linux",
-		"freeMemory":      strings.Trim(string(freeMemory), "\n"),
-		"usedMemory":      strings.Trim(string(usedMemory), "\n"),
-		"totalMemory":     strings.Trim(string(totalMemory), "\n"),
-		"availableMemory": strings.Trim(string(available), "\n"),
-		"swapTotal":       strings.Trim(string(swapTotal), "\n"),
-		"swapUsed":        strings.Trim(string(swapUsed), "\n"),
-		"swapFree":        strings.Trim(string(swapFree), "\n"),
+		"memory.free.bytes": strings.Trim(string(freeMemory), "\n"),
+
+		"memory.used.bytes": strings.Trim(string(usedMemory), "\n"),
+
+		"memory.total.bytes": strings.Trim(string(totalMemory), "\n"),
+
+		"memory.available.bytes": strings.Trim(string(available), "\n"),
+
+		"memory.swap.total.bytes": strings.Trim(string(swapTotal), "\n"),
+
+		"memory.swap.used.bytes": strings.Trim(string(swapUsed), "\n"),
+
+		"memory.swap.free.bytes": strings.Trim(string(swapFree), "\n"),
 	}
 
-	bytes, _ := json.Marshal(result)
+	bytes, err := json.Marshal(result)
 
-	fmt.Println(string(bytes))
+	if err != nil {
+
+		response := make(map[string]interface{})
+
+		response["error"] = err.Error()
+
+		errorDisplay(response)
+
+	} else {
+
+		fmt.Println(string(bytes))
+
+	}
 
 }

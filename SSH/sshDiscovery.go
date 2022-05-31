@@ -13,6 +13,22 @@ import (
 
 func Discovery(data map[string]interface{}) map[string]interface{} {
 
+	defer func() {
+
+		if r := recover(); r != nil {
+
+			res := make(map[string]interface{})
+
+			res["status"] = "fail"
+
+			res["error"] = r
+
+			errorDisplay(res)
+
+		}
+
+	}()
+
 	sshPort := data["port"]
 
 	sshHost := (data["ip"]).(string)

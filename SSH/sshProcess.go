@@ -51,9 +51,12 @@ func Process(data map[string]interface{}) {
 
 	sshClient, err := ssh.Dial("tcp", addr, config)
 
+	var errorList []string
+
 	if err != nil {
 
-		err.Error()
+		errorList = append(errorList, err.Error())
+
 	}
 
 	defer sshClient.Close()
@@ -61,48 +64,84 @@ func Process(data map[string]interface{}) {
 	session, err := sshClient.NewSession()
 
 	if err != nil {
-		panic(err)
-	}
 
-	psaux, err := session.Output("ps aux")
-
-	if err != nil {
-		panic(err)
-	}
-
-	psauxString := string(psaux)
-
-	myStringArray := strings.Split(psauxString, "\n")
-
-	var processList []map[string]string
-	flag := 1
-	for _, v := range myStringArray {
-		if flag == 1 {
-			flag = 0
-			continue
-		}
-		eachWorld := strings.SplitN(standardizeSpaces(v), " ", 11)
-		if len(eachWorld) <= 10 {
-			break
-		}
-
-		temp1 := map[string]string{
-			"process.user":   eachWorld[0],
-			"process.id":     eachWorld[1],
-			"process.cpu":    eachWorld[2],
-			"process.memory": eachWorld[3],
-		}
-
-		processList = append(processList, temp1)
+		errorList = append(errorList, err.Error())
 
 	}
 
-	processMap := make(map[string]interface{})
+	if len(errorList) == 0 {
 
-	processMap["Process"] = processList
+		psaux, _ := session.Output("ps aux")
 
-	bytes, _ := json.Marshal(processMap)
+		psauxString := string(psaux)
 
-	fmt.Println(string(bytes))
+		myStringArray := strings.Split(psauxString, "\n")
+
+		var processList []map[string]string
+
+		flag := 1
+
+		for _, v := range myStringArray {
+
+			if flag == 1 {
+
+				flag = 0
+
+				continue
+
+			}
+
+			eachWorld := strings.SplitN(standardizeSpaces(v), " ", 11)
+
+			if len(eachWorld) <= 10 {
+
+				break
+
+			}
+
+			temp1 := map[string]string{
+
+				"process.user": eachWorld[0],
+
+				"process.id": eachWorld[1],
+
+				"process.cpu": eachWorld[2],
+
+				"process.memory": eachWorld[3],
+			}
+
+			processList = append(processList, temp1)
+
+		}
+
+		processMap := make(map[string]interface{})
+
+		processMap["Process"] = processList
+
+		bytes, err := json.Marshal(processMap)
+
+		if err != nil {
+
+			response := make(map[string]interface{})
+
+			response["error"] = err.Error()
+
+			errorDisplay(response)
+
+		} else {
+
+			fmt.Println(string(bytes))
+
+		}
+
+	} else {
+
+		res := make(map[string]interface{})
+
+		res["error"] = errorList
+
+		errorDisplay(res)
+
+	}
 
 }

@@ -4,12 +4,25 @@ import (
 	"encoding/json"
 	"fmt"
 	g "github.com/gosnmp/gosnmp"
-	"log"
 	"strings"
 	"time"
 )
 
 func System(data map[string]interface{}) {
+
+	defer func() {
+
+		if r := recover(); r != nil {
+
+			res := make(map[string]interface{})
+
+			res["error"] = r
+
+			errorDisplay(res)
+
+		}
+
+	}()
 
 	host := data["ip"].(string)
 
@@ -32,55 +45,101 @@ func System(data map[string]interface{}) {
 
 	err := params.Connect()
 
+	var errorList []string
+
 	if err != nil {
-		err.Error()
+
+		errorList = append(errorList, err.Error())
+
 	}
 
 	defer params.Conn.Close()
 
-	oids := []string{"1.3.6.1.2.1.1.5.0", "1.3.6.1.2.1.1.6.0", "1.3.6.1.2.1.1.1.0", "1.3.6.1.2.1.1.2.0", "1.3.6.1.2.1.1.3.0", "1.3.6.1.2.1.1.3.0"} // sysName , sysLocation, sysDiscription,sysOID,
-
-	result, err2 := params.Get(oids) // Get() accepts up to g.MAX_OIDS
-	if err2 != nil {
-		log.Fatalf("Get() err: %v", err2)
-	}
 	var sysName string
+
 	var sysLocation string
+
 	var sysDescription string
+
 	var sysOID string
+
 	var sysUpTime string
 
 	var systemMap = make(map[string]interface{})
 
-	for _, variable := range result.Variables {
+	oids := []string{"1.3.6.1.2.1.1.5.0", "1.3.6.1.2.1.1.6.0", "1.3.6.1.2.1.1.1.0", "1.3.6.1.2.1.1.2.0", "1.3.6.1.2.1.1.3.0", "1.3.6.1.2.1.1.3.0"} // sysName , sysLocation, sysDiscription,sysOID,
 
-		switch variable.Name {
+	result, err := params.Get(oids)
 
-		case ".1.3.6.1.2.1.1.5.0":
-			sysName = string(variable.Value.([]byte))
-			systemMap["system.name"] = sysName
+	if err != nil {
 
-		case ".1.3.6.1.2.1.1.6.0":
-			sysLocation = string(variable.Value.([]byte))
-			systemMap["system.location"] = sysLocation
+		errorList = append(errorList, err.Error())
 
-		case ".1.3.6.1.2.1.1.1.0":
-			sysDescription = string(variable.Value.([]byte))
-			systemMap["system.description"] = strings.Replace(sysDescription, "\r\n", " ", 3)
-
-		case ".1.3.6.1.2.1.1.2.0":
-			sysOID = fmt.Sprintf("%v", variable.Value)
-			systemMap["system.OID"] = sysOID
-
-		case ".1.3.6.1.2.1.1.3.0":
-			sysUpTime = fmt.Sprintf("%v", variable.Value)
-			systemMap["system.uptime"] = sysUpTime
-
-		}
 	}
 
-	bytes, _ := json.Marshal(systemMap)
+	if len(errorList) == 0 {
 
-	fmt.Println(string(bytes))
+		for _, variable := range result.Variables {
+
+			switch variable.Name {
+
+			case ".1.3.6.1.2.1.1.5.0":
+
+				sysName = string(variable.Value.([]byte))
+
+				systemMap["system.name"] = sysName
+
+			case ".1.3.6.1.2.1.1.6.0":
+
+				sysLocation = string(variable.Value.([]byte))
+
+				systemMap["system.location"] = sysLocation
+
+			case ".1.3.6.1.2.1.1.1.0":
+
+				sysDescription = string(variable.Value.([]byte))
+
+				systemMap["system.description"] = strings.Replace(sysDescription, "\r\n", " ", 3)
+
+			case ".1.3.6.1.2.1.1.2.0":
+
+				sysOID = fmt.Sprintf("%v", variable.Value)
+
+				systemMap["system.OID"] = sysOID
+
+			case ".1.3.6.1.2.1.1.3.0":
+
+				sysUpTime = fmt.Sprintf("%v", variable.Value)
+
+				systemMap["system.uptime"] = sysUpTime
+
+			}
+		}
+
+		bytes, err := json.Marshal(systemMap)
+
+		if err != nil {
+
+			response := make(map[string]interface{})
+
+			response["error"] = err.Error()
+
+			errorDisplay(response)
+
+		} else {
+
+			fmt.Println(string(bytes))
+
+		}
+
+	} else {
+
+		response := make(map[string]interface{})
+
+		response["error"] = errorList
+
+		errorDisplay(response)
+
+	}
 
 }

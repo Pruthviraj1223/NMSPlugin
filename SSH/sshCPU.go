@@ -45,6 +45,7 @@ func Cpu(data map[string]interface{}) {
 			"aes128-ctr", "aes192-ctr", "aes256-ctr",
 		}},
 	}
+	var errorList []string
 
 	config.Auth = []ssh.AuthMethod{ssh.Password(sshPassword)}
 
@@ -52,79 +53,110 @@ func Cpu(data map[string]interface{}) {
 
 	sshClient, err := ssh.Dial("tcp", address, config)
 
+	if err != nil {
+
+		errorList = append(errorList, err.Error())
+
+	}
+
 	defer sshClient.Close()
 
 	session, err := sshClient.NewSession()
 
 	if err != nil {
-		return
+		errorList = append(errorList, err.Error())
 	}
 
 	var CPU = make(map[string]interface{})
 
-	cpuUtilization, err := session.CombinedOutput("mpstat -P ALL")
+	if len(errorList) == 0 {
 
-	var cpuList []map[string]string
+		cpuUtilization, _ := session.CombinedOutput("mpstat -P ALL")
 
-	cpuUtilizationString := string(cpuUtilization)
+		var cpuList []map[string]string
 
-	cpuStringArray := strings.Split(cpuUtilizationString, "\n")
+		cpuUtilizationString := string(cpuUtilization)
 
-	flag1 := 1
+		cpuStringArray := strings.Split(cpuUtilizationString, "\n")
 
-	for _, v := range cpuStringArray {
+		flag1 := 1
 
-		if flag1 <= 3 {
+		for _, v := range cpuStringArray {
 
-			flag1++
+			if flag1 <= 3 {
 
-			continue
+				flag1++
 
+				continue
+
+			}
+
+			eachWord := strings.Split(standardizeSpaces(v), " ")
+
+			if len(eachWord) <= 13 {
+
+				continue
+
+			}
+
+			if eachWord[3] == "all" {
+
+				CPU["cpu.name"] = eachWord[3]
+
+				CPU["cpu.user.percent"] = eachWord[4]
+
+				CPU["cpu.sys.percent"] = eachWord[6]
+
+				CPU["cpu.idle.percent"] = eachWord[13]
+
+			} else {
+
+				temp1 := map[string]string{
+
+					"cpu.name": eachWord[3],
+
+					"cpu.user.percent": eachWord[4],
+
+					"cpu.sys.percent": eachWord[6],
+
+					"cpu.idle.percent": eachWord[13],
+				}
+
+				cpuList = append(cpuList, temp1)
+
+			}
 		}
 
-		eachWord := strings.Split(standardizeSpaces(v), " ")
+		CPU["CPU"] = cpuList
 
-		if len(eachWord) <= 13 {
+		bytes, err := json.Marshal(CPU)
 
-			continue
+		if err != nil {
 
-		}
+			response := make(map[string]interface{})
 
-		if eachWord[3] == "all" {
+			response["error"] = err.Error()
 
-			CPU["cpu.name"] = eachWord[3]
-
-			CPU["cpu.user.percent"] = eachWord[4]
-
-			CPU["cpu.sys.percent"] = eachWord[6]
-
-			CPU["cpu.idle.percent"] = eachWord[13]
+			errorDisplay(response)
 
 		} else {
 
-			temp1 := map[string]string{
-
-				"cpu.name": eachWord[3],
-
-				"cpu.user.percent": eachWord[4],
-
-				"cpu.sys.percent": eachWord[6],
-
-				"cpu.idle.percent": eachWord[13],
-			}
-
-			cpuList = append(cpuList, temp1)
+			fmt.Println(string(bytes))
 
 		}
+
+	} else {
+
+		response := make(map[string]interface{})
+
+		response["error"] = errorList
+
+		errorDisplay(response)
+
 	}
 
-	CPU["CPU"] = cpuList
-
-	bytes, _ := json.Marshal(CPU)
-
-	fmt.Println(string(bytes))
-
 }
+
 func errorDisplay(res map[string]interface{}) {
 
 	bytes, _ := json.Marshal(res)

@@ -9,6 +9,20 @@ import (
 
 func Memory(data map[string]interface{}) {
 
+	defer func() {
+
+		if r := recover(); r != nil {
+
+			res := make(map[string]interface{})
+
+			res["error"] = r
+
+			errorDisplay(res)
+
+		}
+
+	}()
+
 	host := data["ip"].(string)
 
 	port := int((data["port"]).(float64))
@@ -19,33 +33,58 @@ func Memory(data map[string]interface{}) {
 
 	endpoint := winrm.NewEndpoint(host, port, false, false, nil, nil, nil, 0)
 
-	client, err := winrm.NewClient(endpoint, name, password)
+	var errorList []string
 
-	_, err = client.CreateShell()
+	client, err := winrm.NewClient(endpoint, name, password)
 
 	if err != nil {
 
-		err.Error()
+		errorList = append(errorList, err.Error())
 
 	}
 
-	commandForMemory := "Get-WmiObject win32_OperatingSystem |%{\"{0} {1} {2} {3}\" -f $_.totalvisiblememorysize, $_.freephysicalmemory, $_.totalvirtualmemorysize, $_.freevirtualmemory} "
+	if len(errorList) == 0 {
 
-	a := "aa"
+		commandForMemory := "Get-WmiObject win32_OperatingSystem |%{\"{0} {1} {2} {3}\" -f $_.totalvisiblememorysize, $_.freephysicalmemory, $_.totalvirtualmemorysize, $_.freevirtualmemory} "
 
-	memory, _, _, err := client.RunPSWithString(commandForMemory, a)
+		memory, _, _, err := client.RunPSWithString(commandForMemory, "")
 
-	memoryStringArray := strings.Split(standardizeSpaces(memory), " ")
+		memoryStringArray := strings.Split(standardizeSpaces(memory), " ")
 
-	result := map[string]interface{}{
-		"free.memory":          memoryStringArray[1],
-		"free.virtual.memory":  memoryStringArray[3],
-		"total.memory":         memoryStringArray[0],
-		"total.virtual.memory": memoryStringArray[2],
+		result := map[string]interface{}{
+
+			"free.memory.bytes": memoryStringArray[1],
+
+			"free.virtual.memory.bytes": memoryStringArray[3],
+
+			"total.memory.bytes": memoryStringArray[0],
+
+			"total.virtual.memory.bytes": memoryStringArray[2],
+		}
+
+		bytes, err := json.Marshal(result)
+
+		if err != nil {
+
+			response := make(map[string]interface{})
+
+			response["error"] = err.Error()
+
+			errorDisplay(response)
+
+		} else {
+
+			fmt.Println(string(bytes))
+
+		}
+
+	} else {
+
+		res := make(map[string]interface{})
+
+		res["error"] = errorList
+
+		errorDisplay(res)
 	}
-
-	bytes, _ := json.Marshal(result)
-
-	fmt.Println(string(bytes))
 
 }

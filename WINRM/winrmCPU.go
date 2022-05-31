@@ -9,6 +9,20 @@ import (
 
 func Cpu(data map[string]interface{}) {
 
+	defer func() {
+
+		if r := recover(); r != nil {
+
+			res := make(map[string]interface{})
+
+			res["error"] = r
+
+			errorDisplay(res)
+
+		}
+
+	}()
+
 	host := data["ip"].(string)
 
 	port := int((data["port"]).(float64))
@@ -21,61 +35,89 @@ func Cpu(data map[string]interface{}) {
 
 	client, err := winrm.NewClient(endpoint, name, password)
 
-	_, err = client.CreateShell()
+	var errorList []string
 
 	if err != nil {
 
-		err.Error()
+		errorList = append(errorList, err.Error())
 
 	}
 
-	commandForCpu := "Get-WmiObject win32_Processor | select DeviceID, SystemName, LoadPercentage | Foreach-Object {$_.DeviceId,$_.SystemName,$_.LoadPercentage -join \" \"}"
+	if len(errorList) == 0 {
 
-	var cpu string
+		commandForCpu := "Get-WmiObject win32_Processor | select DeviceID, SystemName, LoadPercentage | Foreach-Object {$_.DeviceId,$_.SystemName,$_.LoadPercentage -join \" \"}"
 
-	var cpuList []map[string]string
+		var cpu string
 
-	a := "aa"
+		var cpuList []map[string]string
 
-	cpu, _, _, err = client.RunPSWithString(commandForCpu, a)
+		a := "aa"
 
-	cpuStringArray := strings.Split(cpu, "\n")
+		cpu, aa, bb, err := client.RunPSWithString(commandForCpu, a)
 
-	for _, v := range cpuStringArray {
+		fmt.Println(aa)
 
-		if len(cpuStringArray) == 0 {
+		fmt.Println(bb)
 
-			break
+		cpuStringArray := strings.Split(cpu, "\n")
+
+		for _, v := range cpuStringArray {
+
+			if len(cpuStringArray) == 0 {
+
+				break
+
+			}
+
+			eachWord := strings.Split(standardizeSpaces(v), " ")
+
+			if len(eachWord) <= 2 {
+
+				break
+
+			}
+
+			temp := map[string]string{
+
+				"cpu.name": eachWord[0],
+
+				"cpu.system.name": eachWord[1],
+
+				"cpu.load.percentage": eachWord[2],
+			}
+
+			cpuList = append(cpuList, temp)
 
 		}
 
-		eachWord := strings.Split(standardizeSpaces(v), " ")
+		var cpuMap = make(map[string]interface{})
 
-		if len(eachWord) <= 2 {
+		cpuMap["CPU"] = cpuList
 
-			break
+		bytes, err := json.Marshal(cpuMap)
+
+		if err != nil {
+
+			response := make(map[string]interface{})
+
+			response["error"] = err.Error()
+
+			errorDisplay(response)
+
+		} else {
+
+			fmt.Println(string(bytes))
 
 		}
 
-		temp := map[string]string{
+	} else {
 
-			"cpu.name": eachWord[0],
+		res := make(map[string]interface{})
 
-			"cpu.system.name": eachWord[1],
+		res["error"] = errorList
 
-			"cpu.load.percentage": eachWord[2],
-		}
-
-		cpuList = append(cpuList, temp)
+		errorDisplay(res)
 
 	}
-
-	var cpuMap = make(map[string]interface{})
-
-	cpuMap["CPU"] = cpuList
-
-	bytes, _ := json.Marshal(cpuMap)
-
-	fmt.Println(string(bytes))
 
 }

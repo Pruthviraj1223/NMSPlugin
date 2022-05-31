@@ -53,76 +53,108 @@ func Disk(data map[string]interface{}) {
 
 	sshClient, err := ssh.Dial("tcp", addr, config)
 
+	var errorList []string
+
+	if err != nil {
+
+		errorList = append(errorList, err.Error())
+
+	}
+
 	defer sshClient.Close()
 
 	session, err := sshClient.NewSession()
 
 	if err != nil {
 
-		panic(err.Error())
+		errorList = append(errorList, err.Error())
 
 	}
 
-	diskMap := make(map[string]interface{})
+	if len(errorList) == 0 {
 
-	var diskList []map[string]interface{}
+		diskMap := make(map[string]interface{})
 
-	diskData, err := session.Output("df")
+		var diskList []map[string]interface{}
 
-	diskUtilizationString := string(diskData)
+		diskData, _ := session.Output("df")
 
-	diskStringArray := strings.Split(diskUtilizationString, "\n")
+		diskUtilizationString := string(diskData)
 
-	count := 1
+		diskStringArray := strings.Split(diskUtilizationString, "\n")
 
-	for _, v := range diskStringArray {
+		count := 1
 
-		if count == 1 {
+		for _, v := range diskStringArray {
 
-			count++
+			if count == 1 {
 
-			continue
+				count++
+
+				continue
+			}
+
+			eachWord := strings.Split(standardizeSpaces(v), " ")
+
+			if len(eachWord) <= 5 {
+
+				continue
+			}
+
+			usePercentString := strings.Trim(eachWord[4], "-%")
+
+			usePercent, _ := strconv.Atoi(usePercentString)
+
+			freePercent := 100 - usePercent
+
+			usedBytes, _ := strconv.Atoi(eachWord[2])
+
+			available, _ := strconv.Atoi(eachWord[3])
+
+			temp := make(map[string]interface{})
+
+			temp["disk.name"] = eachWord[0]
+
+			temp["disk.total.bytes"] = eachWord[1]
+
+			temp["disk.used.bytes"] = usedBytes
+
+			temp["disk.available.bytes"] = available
+
+			temp["disk.used.percent"] = usePercent
+
+			temp["disk.free.percent"] = freePercent
+
+			diskList = append(diskList, temp)
+
 		}
 
-		eachWord := strings.Split(standardizeSpaces(v), " ")
+		diskMap["disk"] = diskList
 
-		if len(eachWord) <= 5 {
+		bytes, err := json.Marshal(diskMap)
 
-			continue
+		if err != nil {
+
+			response := make(map[string]interface{})
+
+			response["error"] = err.Error()
+
+			errorDisplay(response)
+
+		} else {
+
+			fmt.Println(string(bytes))
+
 		}
 
-		usePercentString := strings.Trim(eachWord[4], "-%")
+	} else {
 
-		usePercent, _ := strconv.Atoi(usePercentString)
+		response := make(map[string]interface{})
 
-		freePercent := 100 - usePercent
+		response["error"] = errorList
 
-		usedBytes, _ := strconv.Atoi(eachWord[2])
-
-		available, _ := strconv.Atoi(eachWord[3])
-
-		temp := make(map[string]interface{})
-
-		temp["disk.name"] = eachWord[0]
-
-		temp["disk.total.bytes"] = eachWord[1]
-
-		temp["disk.used.bytes"] = usedBytes
-
-		temp["disk.available.bytes"] = available
-
-		temp["disk.used.percent"] = usePercent
-
-		temp["disk.free.percent"] = freePercent
-
-		diskList = append(diskList, temp)
+		errorDisplay(response)
 
 	}
-
-	diskMap["Disk"] = diskList
-
-	bytes, _ := json.Marshal(diskMap)
-
-	fmt.Println(string(bytes))
 
 }

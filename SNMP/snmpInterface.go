@@ -13,6 +13,20 @@ var list []int
 
 func Interface(data map[string]interface{}) {
 
+	defer func() {
+
+		if r := recover(); r != nil {
+
+			res := make(map[string]interface{})
+
+			res["error"] = r
+
+			errorDisplay(res)
+
+		}
+
+	}()
+
 	host := data["ip"].(string)
 
 	port := int((data["port"]).(float64))
@@ -46,13 +60,15 @@ func Interface(data map[string]interface{}) {
 		Timeout: time.Duration(2) * time.Second,
 	}
 
+	var errorList []string
+
 	err := params.Connect()
 
 	_, err = params.Get([]string{"1.3.6.1.2.1.1.5.0"})
 
 	if err != nil {
 
-		err.Error()
+		errorList = append(errorList, err.Error())
 
 	}
 
@@ -83,158 +99,182 @@ func Interface(data map[string]interface{}) {
 	err = params.Walk(".1.3.6.1.2.1.2.2.1.1", walkFunc)
 
 	if err != nil {
-		return
+
+		errorList = append(errorList, err.Error())
+
 	}
 
 	var listOfMap []map[string]interface{}
 
-	for i := 0; i < len(list); i++ {
+	if len(errorList) == 0 {
 
-		var newList []string
+		for i := 0; i < len(list); i++ {
 
-		for j := 0; j < len(oidList); j++ {
+			var newList []string
 
-			newList = append(newList, oidList[j]+strconv.Itoa(list[i]))
+			for j := 0; j < len(oidList); j++ {
 
-		}
+				newList = append(newList, oidList[j]+strconv.Itoa(list[i]))
 
-		ans, _ := params.Get(newList)
+			}
 
-		var interfaceMap = make(map[string]interface{})
+			ans, _ := params.Get(newList)
 
-		fmt.Println("new ", newList)
+			var interfaceMap = make(map[string]interface{})
 
-		for _, result := range ans.Variables {
+			for _, result := range ans.Variables {
 
-			fmt.Println("name ", result.Name, " ", result.Value)
+				VariableName := strings.SplitAfter(result.Name, ".1.3.6.1.2.1.2.2.1.")
 
-			VariableName := strings.SplitAfter(result.Name, ".1.3.6.1.2.1.2.2.1.")
+				strArr := strings.Split(VariableName[1], ".")
 
-			strArr := strings.Split(VariableName[1], ".")
+				ch, _ := strconv.Atoi(strArr[0])
 
-			ch, _ := strconv.Atoi(strArr[0])
+				switch ch {
 
-			switch ch {
+				case 2:
 
-			case 2:
+					interfaceMap["interface.Description"] = string(result.Value.([]byte))
 
-				interfaceMap["interface.Description"] = string(result.Value.([]byte))
+				case 3:
 
-			case 3:
+					switch (result.Value).(int) {
 
-				switch (result.Value).(int) {
+					case 6:
+						interfaceMap["interface.Type"] = "ethernetCsmacd"
+					case 1:
+						interfaceMap["interface.Type"] = "other"
+					case 135:
+						interfaceMap["interface.Type"] = "l2vlan"
+					case 53:
+						interfaceMap["interface.Type"] = "propVirtual"
+					case 24:
+						interfaceMap["interface.Type"] = "softwareLoopback"
+					case 131:
+						interfaceMap["interface.Type"] = "tunnel"
+					}
+
+				case 5:
+
+					interfaceMap["interface.ifSpeed"] = result.Value
 
 				case 6:
-					interfaceMap["interface.Type"] = "ethernetCsmacd"
-				case 1:
-					interfaceMap["interface.Type"] = "other"
-				case 135:
-					interfaceMap["interface.Type"] = "l2vlan"
-				case 53:
-					interfaceMap["interface.Type"] = "propVirtual"
-				case 24:
-					interfaceMap["interface.Type"] = "softwareLoopback"
-				case 131:
-					interfaceMap["interface.Type"] = "tunnel"
-				}
 
-				// 5 6 10 16
+					interfaceMap["interface.ifPhysAddress"] = fmt.Sprintf("%x", result.Value)
 
-			case 5:
+				case 7:
 
-				interfaceMap["interface.ifSpeed"] = result.Value
+					if result.Value.(int) == 1 {
 
-			case 6:
+						interfaceMap["interface.admin.status"] = "Up"
 
-				interfaceMap["interface.ifPhysAddress"] = fmt.Sprintf("%x", result.Value)
+					}
 
-			case 7:
+					if result.Value.(int) == 2 {
 
-				if result.Value.(int) == 1 {
+						interfaceMap["interface.admin.status"] = "Down"
 
-					interfaceMap["interface.admin.status"] = "Up"
+					}
 
-				}
+				case 8:
 
-				if result.Value.(int) == 2 {
+					if result.Value.(int) == 1 {
 
-					interfaceMap["interface.admin.status"] = "Down"
+						interfaceMap["interface.operating.status"] = "Up"
 
-				}
+					}
 
-			case 8:
+					if result.Value.(int) == 2 {
 
-				if result.Value.(int) == 1 {
+						interfaceMap["interface.operating.status"] = "Down"
 
-					interfaceMap["interface.operating.status"] = "Up"
+					}
 
-				}
+				case 10:
 
-				if result.Value.(int) == 2 {
+					if result.Value != nil {
 
-					interfaceMap["interface.operating.status"] = "Down"
+						interfaceMap["interface.ifInOctets"] = result.Value.(uint)
 
-				}
+					} else {
 
-			case 10:
+						interfaceMap["interface.ifInOctets"] = ""
 
-				if result.Value != nil {
+					}
 
-					interfaceMap["interface.ifInOctets"] = result.Value.(uint)
+				case 14:
 
-				} else {
+					if result.Value == nil {
 
-					interfaceMap["interface.ifInOctets"] = ""
+						interfaceMap["interface.InError"] = ""
 
-				}
+					} else {
 
-			case 14:
+						interfaceMap["interface.InError"] = result.Value
 
-				if result.Value == nil {
+					}
 
-					interfaceMap["interface.InError"] = ""
+				case 16:
 
-				} else {
+					if result.Value != nil {
 
-					interfaceMap["interface.InError"] = result.Value
+						interfaceMap["interface.ifOutOctets"] = result.Value.(uint)
 
-				}
+					} else {
 
-			case 16:
+						interfaceMap["interface.ifOutOctets"] = ""
 
-				if result.Value != nil {
+					}
 
-					interfaceMap["interface.ifOutOctets"] = result.Value.(uint)
+				case 20:
 
-				} else {
+					if (result.Value) == nil {
 
-					interfaceMap["interface.ifOutOctets"] = ""
+						interfaceMap["interface.OutError"] = ""
+
+					} else {
+
+						interfaceMap["interface.OutError"] = result.Value
+
+					}
 
 				}
 
-			case 20:
-
-				if (result.Value) == nil {
-
-					interfaceMap["interface.OutError"] = ""
-
-				} else {
-
-					interfaceMap["interface.OutError"] = result.Value
-
-				}
 			}
+
+			listOfMap = append(listOfMap, interfaceMap)
+
 		}
-		listOfMap = append(listOfMap, interfaceMap)
+
+		var dataMap = make(map[string]interface{})
+
+		dataMap["interface"] = listOfMap
+
+		bytes, err := json.Marshal(dataMap)
+
+		if err != nil {
+
+			response := make(map[string]interface{})
+
+			response["error"] = err.Error()
+
+			errorDisplay(response)
+
+		} else {
+
+			fmt.Println(string(bytes))
+
+		}
+
+	} else {
+
+		response := make(map[string]interface{})
+
+		response["error"] = errorList
+
+		errorDisplay(response)
+
 	}
-
-	var dataMap = make(map[string]interface{})
-
-	dataMap["interface"] = listOfMap
-
-	bytes, _ := json.Marshal(dataMap)
-
-	fmt.Println(string(bytes))
 
 }
 
@@ -245,5 +285,3 @@ func walkFunc(pdu g.SnmpPDU) error {
 	return nil
 
 }
-
-//index,desc,alias,op-status,name
