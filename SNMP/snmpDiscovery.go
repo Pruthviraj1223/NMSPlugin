@@ -99,9 +99,9 @@ func Discovery(data map[string]interface{}) map[string]interface{} {
 
 	oidList = append(oidList, ".1.3.6.1.2.1.2.2.1.8.")
 
-	oidList = append(oidList, ".1.3.6.1.2.1.31.1.1.1.1.")
+	oidList = append(oidList, "1.3.6.1.2.1.31.1.1.1.1.")
 
-	oidList = append(oidList, ".1.3.6.1.2.1.31.1.1.1.18.")
+	oidList = append(oidList, "1.3.6.1.2.1.31.1.1.1.18.")
 
 	err = params.Walk(".1.3.6.1.2.1.2.2.1.1", walkFunc)
 
@@ -133,8 +133,6 @@ func Discovery(data map[string]interface{}) map[string]interface{} {
 
 		for _, outcome := range ans.Variables {
 
-			// copy plugin to that
-
 			if strings.Contains(outcome.Name, "1.31.1") {
 
 				VariableName := strings.SplitAfter(outcome.Name, ".1.3.6.1.2.1.31.1.1.1.")
@@ -146,10 +144,10 @@ func Discovery(data map[string]interface{}) map[string]interface{} {
 				switch ch {
 
 				case 1:
-					interfaceMap["interfaceName"] = string(outcome.Value.([]byte))
+					interfaceMap["interface.name"] = strings.Trim(string(outcome.Value.([]byte)), "\"")
 
 				case 18:
-					interfaceMap["alias"] = string(outcome.Value.([]byte))
+					interfaceMap["alias"] = strings.Trim(string(outcome.Value.([]byte)), "\"")
 
 				}
 
@@ -164,11 +162,11 @@ func Discovery(data map[string]interface{}) map[string]interface{} {
 
 				case 1:
 
-					interfaceMap["index"] = outcome.Value
+					interfaceMap["interface.index"] = outcome.Value
 
 				case 2:
 
-					interfaceMap["interface.Description"] = string(outcome.Value.([]byte))
+					interfaceMap["interface.description"] = string(outcome.Value.([]byte))
 
 				case 8:
 
@@ -176,13 +174,13 @@ func Discovery(data map[string]interface{}) map[string]interface{} {
 
 					if outcome.Value.(int) == 1 {
 
-						operationalStatus = "Up"
+						operationalStatus = "up"
 
 					}
 
 					if outcome.Value.(int) == 2 {
 
-						operationalStatus = "Down"
+						operationalStatus = "down"
 
 					}
 
@@ -206,6 +204,7 @@ func Discovery(data map[string]interface{}) map[string]interface{} {
 	result["result"] = dataMap
 
 	return result
+
 }
 
 func errorDisplay(res map[string]interface{}) {

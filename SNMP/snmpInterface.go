@@ -38,11 +38,15 @@ func Interface(data map[string]interface{}) {
 	switch data["version"] {
 
 	case "v1":
+
 		version = g.Version1
+
 		break
 
 	case "v2":
+
 		version = g.Version2c
+
 		break
 
 	}
@@ -134,24 +138,36 @@ func Interface(data map[string]interface{}) {
 
 				case 2:
 
-					interfaceMap["interface.Description"] = string(result.Value.([]byte))
+					interfaceMap["interface.description"] = string(result.Value.([]byte))
 
 				case 3:
 
 					switch (result.Value).(int) {
 
 					case 6:
-						interfaceMap["interface.Type"] = "ethernetCsmacd"
+
+						interfaceMap["interface.type"] = "ethernetCsmacd"
+
 					case 1:
-						interfaceMap["interface.Type"] = "other"
+
+						interfaceMap["interface.type"] = "other"
+
 					case 135:
-						interfaceMap["interface.Type"] = "l2vlan"
+
+						interfaceMap["interface.type"] = "l2vlan"
+
 					case 53:
-						interfaceMap["interface.Type"] = "propVirtual"
+
+						interfaceMap["interface.type"] = "propVirtual"
+
 					case 24:
-						interfaceMap["interface.Type"] = "softwareLoopback"
+
+						interfaceMap["interface.type"] = "softwareLoopback"
+
 					case 131:
-						interfaceMap["interface.Type"] = "tunnel"
+
+						interfaceMap["interface.type"] = "tunnel"
+
 					}
 
 				case 5:
@@ -206,11 +222,11 @@ func Interface(data map[string]interface{}) {
 
 					if result.Value == nil {
 
-						interfaceMap["interface.InError"] = ""
+						interfaceMap["interface.inError"] = ""
 
 					} else {
 
-						interfaceMap["interface.InError"] = result.Value
+						interfaceMap["interface.inError"] = result.Value
 
 					}
 
@@ -230,11 +246,11 @@ func Interface(data map[string]interface{}) {
 
 					if (result.Value) == nil {
 
-						interfaceMap["interface.OutError"] = ""
+						interfaceMap["interface.outError"] = ""
 
 					} else {
 
-						interfaceMap["interface.OutError"] = result.Value
+						interfaceMap["interface.outError"] = result.Value
 
 					}
 

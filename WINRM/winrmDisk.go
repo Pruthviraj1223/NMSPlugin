@@ -31,17 +31,11 @@ func Disk(data map[string]interface{}) {
 
 	var errorList []string
 
-	//host := data["ip"].(string)
-
 	port := int((data["port"]).(float64))
-	//
-	//name := (data["name"]).(string)
-	//
-	//password := (data["password"]).(string)
 
 	endpoint := winrm.NewEndpoint(data["ip"].(string), port, false, false, nil, nil, nil, 0)
 
-	client, err := winrm.NewClient(endpoint, data["name"].(string), data["password"].(string))
+	client, err := winrm.NewClient(endpoint, data["username"].(string), data["password"].(string))
 
 	if err != nil {
 
@@ -55,11 +49,7 @@ func Disk(data map[string]interface{}) {
 
 		commandForDisk := "Get-WmiObject win32_logicaldisk | Foreach-Object {$_.DeviceId,$_.Freespace,$_.Size -join \" \"}"
 
-		disk, aa, bb, err := client.RunPSWithString(commandForDisk, "")
-
-		fmt.Println(aa)
-
-		fmt.Println(bb)
+		disk, _, _, err := client.RunPSWithString(commandForDisk, "")
 
 		var diskList []map[string]string
 

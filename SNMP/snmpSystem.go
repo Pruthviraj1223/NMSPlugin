@@ -105,7 +105,7 @@ func System(data map[string]interface{}) {
 
 				sysOID = fmt.Sprintf("%v", variable.Value)
 
-				systemMap["system.OID"] = sysOID
+				systemMap["system.oid"] = sysOID
 
 			case ".1.3.6.1.2.1.1.3.0":
 

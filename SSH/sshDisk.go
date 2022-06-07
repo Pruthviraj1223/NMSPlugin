@@ -25,7 +25,7 @@ func Disk(data map[string]interface{}) {
 
 	}()
 
-	sshUser := (data["name"]).(string)
+	sshUser := (data["username"]).(string)
 
 	sshPassword := (data["password"]).(string)
 

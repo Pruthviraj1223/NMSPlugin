@@ -27,7 +27,7 @@ func System(data map[string]interface{}) {
 
 	port := int((data["port"]).(float64))
 
-	name := (data["name"]).(string)
+	name := (data["username"]).(string)
 
 	password := (data["password"]).(string)
 
@@ -43,27 +43,25 @@ func System(data map[string]interface{}) {
 
 	sysName, _, _, err := client.RunPSWithString(commandForName, a)
 
-	updateName := strings.Replace(sysName, "\r\n", " ", -1)
-
-	systemMap["system.name"] = strings.Replace(updateName, "\\", "", -1)
+	systemMap["system.name"] = strings.Replace(strings.Replace(sysName, "\r\n", "", -1), "\\", "", -1)
 
 	commandForVersion := "(Get-WMIObject win32_operatingsystem).version"
 
 	sysVersion, _, _, err := client.RunPSWithString(commandForVersion, a)
 
-	systemMap["system.version"] = strings.Replace(sysVersion, "\r\n", " ", -1)
+	systemMap["system.version"] = strings.Trim(sysVersion, "\r\n")
 
 	username := "whoami"
 
 	uname, _, _, err := client.RunPSWithString(username, a)
 
-	systemMap["uname"] = strings.Replace(strings.Replace(uname, "\r\n", " ", -1), "\\", "", -1)
+	systemMap["uname"] = strings.Replace(strings.Replace(uname, "\r\n", "", -1), "\\", "", -1)
 
 	sysUpTime := "(Get-WMIObject win32_operatingsystem).LastBootUpTime;"
 
 	sysTime, _, _, err := client.RunPSWithString(sysUpTime, a)
 
-	systemMap["system.up.time"] = strings.Replace(sysTime, "\r\n", " ", -1)
+	systemMap["system.uptime"] = strings.Replace(sysTime, "\r\n", "", -1)
 
 	bytes, err := json.Marshal(systemMap)
 

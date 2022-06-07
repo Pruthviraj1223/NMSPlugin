@@ -27,7 +27,7 @@ func Memory(data map[string]interface{}) {
 
 	port := int((data["port"]).(float64))
 
-	name := (data["name"]).(string)
+	name := (data["username"]).(string)
 
 	password := (data["password"]).(string)
 

@@ -35,7 +35,7 @@ func Discovery(data map[string]interface{}) map[string]interface{} {
 
 	sshPassword := (data["password"]).(string)
 
-	sshUser := (data["name"]).(string)
+	sshUser := (data["username"]).(string)
 
 	config := &ssh.ClientConfig{
 

@@ -23,7 +23,7 @@ func System(data map[string]interface{}) {
 		}
 	}()
 
-	sshUser := (data["name"]).(string)
+	sshUser := (data["username"]).(string)
 
 	sshPassword := (data["password"]).(string)
 
@@ -75,7 +75,7 @@ func System(data map[string]interface{}) {
 
 	if len(errorList) == 0 {
 
-		res, _ := session.Output("vmstat")
+		res, _ := session.Output("uname -n && vmstat")
 
 		splittedString := strings.Split(string(res), "\n")
 
@@ -83,7 +83,15 @@ func System(data map[string]interface{}) {
 
 		for _, v := range splittedString {
 
-			if flag == 1 || flag == 2 || v == "" {
+			if flag == 1 {
+
+				systemMap["system.user.name"] = v
+
+				flag++
+
+			}
+
+			if flag == 2 || flag == 3 || v == "" {
 
 				flag++
 
@@ -101,55 +109,9 @@ func System(data map[string]interface{}) {
 
 		}
 
-	} else {
+		bytes, _ := json.Marshal(systemMap)
 
-		var response = make(map[string]interface{})
-
-		response["error"] = errorList
-
-		errorDisplay(response)
-
-	}
-
-	sessionForSystem, err := sshClient.NewSession()
-
-	if err != nil {
-
-		errorList = append(errorList, err.Error())
-
-	}
-
-	defer sessionForSystem.Close()
-
-	if len(errorList) == 0 {
-
-		res, _ := session.Output("uname -a")
-
-		strArray := strings.Split(string(res), " ")
-
-		systemMap["system.user.name"] = strArray[1]
-
-		systemMap["system.os.name"] = strArray[0]
-
-		systemMap["system.os.version"] = strArray[3]
-
-		systemMap["system.uptime"] = strArray[5] + " " + strArray[6] + " " + strArray[7] + " " + strArray[8]
-
-		bytes, err := json.Marshal(systemMap)
-
-		if err != nil {
-
-			response := make(map[string]interface{})
-
-			response["error"] = err.Error()
-
-			errorDisplay(response)
-
-		} else {
-
-			fmt.Println(string(bytes))
-
-		}
+		fmt.Println(string(bytes))
 
 	} else {
 

@@ -27,7 +27,7 @@ func Cpu(data map[string]interface{}) {
 
 	port := int((data["port"]).(float64))
 
-	name := (data["name"]).(string)
+	name := (data["username"]).(string)
 
 	password := (data["password"]).(string)
 
@@ -53,11 +53,7 @@ func Cpu(data map[string]interface{}) {
 
 		a := "aa"
 
-		cpu, aa, bb, err := client.RunPSWithString(commandForCpu, a)
-
-		fmt.Println(aa)
-
-		fmt.Println(bb)
+		cpu, _, _, err := client.RunPSWithString(commandForCpu, a)
 
 		cpuStringArray := strings.Split(cpu, "\n")
 

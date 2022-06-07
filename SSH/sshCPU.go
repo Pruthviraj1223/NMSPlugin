@@ -24,7 +24,9 @@ func Cpu(data map[string]interface{}) {
 
 	}()
 
-	sshUser := (data["name"]).(string)
+	time.Sleep(60 * time.Second)
+
+	sshUser := (data["username"]).(string)
 
 	sshPassword := (data["password"]).(string)
 
